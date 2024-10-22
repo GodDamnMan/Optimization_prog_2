@@ -1,3 +1,4 @@
+
 import numpy
 from numpy.linalg import norm
 from task1 import Simplex
@@ -116,8 +117,8 @@ class IteriorPoint:
         x_l2 += "]"
         print ("In the last iteration ", self.iter_val, "\n\tfor lambda = 0.5 we have x = " , x_l1, "\n\tfor lambda = 0.9 we have x = ", x_l2)
         res = 0
-        for i in range(len(coefs)):
-            res += coefs[i]*self.solution_l1[i]
+        for i in range(len(self.coefs)):
+            res += self.coefs[i]*self.solution_l1[i]
         print("\nOptimum:", round(res, self.epsilon))
 
     def solve_max(self):
@@ -165,7 +166,19 @@ def userInput():
                     print("The method is not applicable!")
                     return
 
-        accuracy = int(input("Enter the approximation accuracy: "))
+        accuracy = input("Enter the approximation accuracy: ")
+
+        if int(accuracy) > 0: 
+            accuracy = int(accuracy)
+        else:
+            k = 0
+            accuracy = float(accuracy)
+            while True:
+                k += 1
+                accuracy *= 10
+                if accuracy > 0:
+                    break
+            accuracy = k
 
         lp_simplex = Simplex(objective_function, constraints, right_hand_side, accuracy)
 
@@ -181,28 +194,41 @@ def userInput():
 
         lp_iterior_point = IteriorPoint(objective_function, constraints, right_hand_side, accuracy)
         # lp_simplex.print_initial()
+
         if(type == "max"):
+            print("===============================================================")
+            print ("SIMPLEX")
             lp_simplex.solve_maximize()
+            print("===============================================================")
+            print ("INTERIOR POINT")
             lp_iterior_point.solve_max()
+            print("===============================================================")
+
+
         else:
+            print("===============================================================")
+            print ("SIMPLEX")
             lp_simplex.solve_minimize()
+            print("===============================================================")
+            print ("INTERIOR POINT")
             lp_iterior_point.solve_min()
-        lp_simplex.print_solved()
+            print("===============================================================")
+        
 
     except ValueError:
         print("ERROR: NOT A NUMBER")
         return
 
-# userInput()
+userInput()
 
-initial_solution = numpy.array([1, 1, 1, 315, 174, 169], float)
-constraints = numpy.array([[18, 15, 12, 1, 0, 0], [6, 4, 8, 0, 1, 0], [5, 3, 3, 0, 0, 1]], float)
-coefs = numpy.array([9, 10, 16, 0, 0, 0], float)
+# initial_solution = numpy.array([1, 1, 1, 315, 174, 169], float)
+# constraints = numpy.array([[18, 15, 12, 1, 0, 0], [6, 4, 8, 0, 1, 0], [5, 3, 3, 0, 0, 1]], float)
+# coefs = numpy.array([9, 10, 16, 0, 0, 0], float)
 
-lp_simplex = Simplex([9,10,16], [[18, 15, 12], [6, 4, 8], [5, 3, 3]], [360, 192, 180], 4)
-lp_iterior_point = IteriorPoint(coefs, constraints, [360, 192, 180], 10)
-lp_iterior_point.solve_max()
+# lp_simplex = Simplex([9,10,16], [[18, 15, 12], [6, 4, 8], [5, 3, 3]], [360, 192, 180], 4)
+# lp_iterior_point = IteriorPoint(coefs, constraints, [360, 192, 180], 10)
+# lp_iterior_point.solve_max()
 
-lp_simplex.solve_maximize()
-# lp_simplex.solve_minimize()
-lp_simplex.print_solved()
+# lp_simplex.solve_maximize()
+# # lp_simplex.solve_minimize()
+# lp_simplex.print_solved()
