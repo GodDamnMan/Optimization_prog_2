@@ -140,7 +140,12 @@ def userInput():
         return
     print("NOTE: in input there shouldn't be any slack variables")
     try:
-        objective_function = list(map(float, input("Enter the coefficients of the objective function: ").split(" ")))
+        
+        objective_function = input("Enter the coefficients of the objective function: ").split(" ")
+        for i in range(objective_function.count("")):
+            objective_function.remove("")
+
+        objective_function = list(map(float, objective_function))
         if(len(objective_function) == 0):
             print("ERROR: NO COEFFICIENTS")
             return
@@ -150,13 +155,19 @@ def userInput():
             print("ERROR: AMOUNT < 1 ?!")
         constraints = []
         for i in range(amount):
-            constraint = list(map(float, input(f"Enter the {i+1} constraint function coefficients: ").split(" ")))
+            constraint = input(f"Enter the {i+1} constraint function coefficients: ").split(" ")
+            for i in range(constraint.count("")):
+                constraint.remove("")
+            constraint = list(map(float, constraint))
             if(len(constraint) == 0):
                 print("ERROR: NOT ENOUGH COEFFICIENTS")
                 return
             constraints.append(constraint)
             
-        right_hand_side = list(map(float, input("Enter the right-hand side numbers: ").split(" ")))
+        right_hand_side = input("Enter the right-hand side numbers: ").split(" ")
+        for i in range(right_hand_side.count("")):
+            right_hand_side.remove("")
+        right_hand_side = list(map(float, right_hand_side))
         if(len(right_hand_side) != amount):
             print("ERROR: NOT ENOUGH COEFFICIENTS")
             return
@@ -168,7 +179,7 @@ def userInput():
 
         accuracy = input("Enter the approximation accuracy: ")
 
-        if int(accuracy) > 0: 
+        if accuracy.count('.') == 0: 
             accuracy = int(accuracy)
         else:
             k = 0
