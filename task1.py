@@ -33,16 +33,17 @@ class Simplex:
             for i in range(1, self.n):
                 if self.solving[i][enters] == 0: continue
                 temp = self.solving[i][self.m-1]/self.solving[i][enters]
-                if (temp < l_value):
+                if (temp < l_value and temp >= 0):
                     leaves = i
                     l_value = temp
             if leaves == 0:
                 break
 
             self.basic[leaves - 1] = self.vars[enters]
-            
+            coef = self.solving[leaves][enters]
+
             for i in range(self.m):
-                self.solving[leaves][i] /= self.solving[leaves][enters]
+                self.solving[leaves][i] /= coef
         
             for i in range(self.n):
                 if i == leaves:
@@ -55,6 +56,7 @@ class Simplex:
     def solve_maximize(self):
         self.solving = self.tableu.copy()
         self.simplex_method()
+        self.print_solved()
         return self.solving[0][self.m-1]
         
     
@@ -63,6 +65,7 @@ class Simplex:
         for i in range(self.m):
             self.solving[0][i] *= -1
         self.simplex_method()
+        self.print_solved()
         return -self.solving[0][self.m-1]
 
     
