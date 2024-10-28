@@ -1,12 +1,11 @@
-
 import numpy
 from numpy.linalg import norm
 from task1 import Simplex
-
+from itertools import*
 
 class IteriorPoint:
 
-    def __init__(self, coefs:list, constraints:list, right_hand_side:list, epsilon:int, n:int):
+    def __init__(self, coefs:list, constraints:list, right_hand_side:list, epsilon:int, n:int, isMax:bool):
         self.solution_l1 = None
         self.solution_l2 = None
         self.epsilon = epsilon
@@ -17,21 +16,105 @@ class IteriorPoint:
         self.alpha2 = 0.9
         self.iter_val = 1
         self.n = n
-        
+        self.isMax = isMax
+
+    def find_all_axis(self):
+        all_axis = []
+        axe = []
+        for i in range(self.n-1):
+            axe.append(0)
+        axe.append(1)
+        all_axis.append(axe)
+        for i in range(self.n-1):
+            tmp_axe = all_axis[i]
+            rotated_axe = tmp_axe[1:] + tmp_axe[:1]
+            all_axis.append(rotated_axe)
+        return all_axis
+
+    # TODO оно не работает для размерности больше чем 2
+    def centroid(self, vertices):
+        x, y = 0, 0
+        n = len(vertices)
+        signed_area = 0
+        for i in range(len(vertices)):
+            x0, y0 = vertices[i]
+            x1, y1 = vertices[(i + 1) % n]
+            area = (x0 * y1) - (x1 * y0)
+            signed_area += area
+            x += (x0 + x1) * area
+            y += (y0 + y1) * area
+        signed_area *= 0.5
+        x /= 6 * signed_area
+        y /= 6 * signed_area
+        return x, y
+
+
+    def intercection(self, intercection_try):
+        tmp_constraints = []
+        for constraint_line in intercection_try:
+            tmp_list = []
+            for constraint_element in range(self.n):
+                tmp_list.append(constraint_line[constraint_element])
+            tmp_constraints.append(tmp_list)
+        tmp_rhs = self.right_hand_side
+        tmp_rhs.append(0)
+
+        intercection_points = []
+        for i in range(len(tmp_constraints)-1):
+            for j in range(i+1, len(tmp_constraints)):
+                M = numpy.matrix([tmp_constraints[i], tmp_constraints[j]])
+                C = numpy.matrix([tmp_rhs[i], tmp_rhs[j]])
+                el = M.I.dot(C.T).tolist()
+                dot = el[0] +  el[1]
+                intercection_points.append(list(dot))
+        return intercection_points
 
     def find_initial_solution(self):
-        initial_solution = [0.00001 for _ in range(self.n)]
+        initial_solution = []
+
+        flag = False
+        for i in self.right_hand_side:
+            if(i < 0):
+                flag = True
+                break
+
+        if(not flag):
+            for _ in range(self.n):
+                initial_solution.append(0.00001)
         
-        for i in range(len(self.constraints)):
-            initial_solution.append(self.right_hand_side[i] - 0.00001 * sum(self.constraints[i][:self.n]))
+            for i in range(len(self.constraints)):
+                initial_solution.append(self.right_hand_side[i] - 0.00001 * sum(self.constraints[i][:self.n]))
         
+        else:
+            all_axis = self.find_all_axis()
+            for i in all_axis:
+                intersection_try = self.constraints + [i]
+                intercection_points = self.intercection(intersection_try)
+                # TODO оно не работает для размерности больше чем 2 (centroid)
+                x1, x2 = self.centroid(intercection_points)
+                flag = True
+                for i in range(len(self.constraints)):
+                    res_to_check = self.constraints[i][0] * x1 + self.constraints[i][1] * x2
+                    if(res_to_check > self.right_hand_side[i]):
+                        flag = False
+                        break
+                    
+                if(flag):
+                    initial_solution.append(x1)
+                    initial_solution.append(x2)
+        #TODO self.constraints стоит опасно может улететь
+                    for i in range(len(self.constraints)):
+                        res = self.right_hand_side[i]
+                        for j in range(self.n):
+                            res -= initial_solution[j] * self.constraints[i][j]
+                        initial_solution.append(res)
+        
+        print(initial_solution)
         self.solution_l1 = initial_solution.copy()
         self.solution_l2 = initial_solution.copy()
 
     def iterior_point_method(self):
         self.find_initial_solution()
-        #TODO понять когда у нас метод не будет работать
-        #TODO разобраться что и как нужно выводить у симплекса
         while True:
             #calculating previous solution and diagonal matrix for lambda1 and lambda2
             prev_sol_l1 = self.solution_l1
@@ -109,10 +192,12 @@ class IteriorPoint:
             x_l2 += f'{item:.{self.epsilon}f}' + " "
         x_l2 += "]"
         print ("In the last iteration ", self.iter_val, "\n\tfor lambda = 0.5 we have x = " , x_l1, "\n\tfor lambda = 0.9 we have x = ", x_l2)
-        res = 0
+        res_l1 = 0
+        res_l2 = 0
         for i in range(len(self.coefs)):
-            res += self.coefs[i]*self.solution_l1[i]
-        print("\nOptimum:", round(res, self.epsilon))
+            res_l1 += self.coefs[i] * self.solution_l1[i]
+            res_l2 += self.coefs[i] * self.solution_l2[i]
+        print("\nOptimum:\n\tfor lambda = 0.5 we have:", round(res_l1, self.epsilon), "\n\tfor lambda = 0.9 we have", round(res_l2, self.epsilon))
 
     def solve_max(self):
         self.iterior_point_method()
@@ -170,23 +255,22 @@ def userInput():
                     f = False
                     continue
             if f:
-                print("Unbounded")
+                print("The problem does not have solution!")
                 return
-            
-
 
         right_hand_side = input("Enter the right-hand side numbers: ").split(" ")
         for i in range(right_hand_side.count("")):
             right_hand_side.remove("")
         right_hand_side = list(map(float, right_hand_side))
+        flag_rhs = False
         if(len(right_hand_side) != amount):
             print("ERROR: NOT ENOUGH COEFFICIENTS")
             return
         else:
             for i in right_hand_side:
                 if(i < 0):
-                    print("The method is not applicable!")
-                    return
+                    print("The  Simplex method is not applicable!(Input contain negative RHS value)")
+                    flag_rhs = True
 
         accuracy = input("Enter the approximation accuracy: ")
 
@@ -202,7 +286,8 @@ def userInput():
                     break
             accuracy = k
 
-        lp_simplex = Simplex(objective_function, constraints, right_hand_side, accuracy)
+        if(not flag_rhs):
+            lp_simplex = Simplex(objective_function, constraints, right_hand_side, accuracy)
 
         #the following block of code make change of input data for different methods
         for i in range(len(constraints)):
@@ -214,13 +299,14 @@ def userInput():
                 else:
                     constraint_iter.append(0)
 
-        lp_iterior_point = IteriorPoint(objective_function, constraints, right_hand_side, accuracy, n)
-        # lp_simplex.print_initial()
-
+        # lp_iterior_point = IteriorPoint(objective_function, constraints, right_hand_side, accuracy, n)
+    
         if(type == "max"):
-            print("===============================================================")
-            print ("SIMPLEX")
-            lp_simplex.solve_maximize()
+            lp_iterior_point = IteriorPoint(objective_function, constraints, right_hand_side, accuracy, n, True)
+            if(not flag_rhs):
+                print("===============================================================")
+                print ("SIMPLEX")
+                lp_simplex.solve_maximize()
             print("===============================================================")
             print ("INTERIOR POINT")
             lp_iterior_point.solve_max()
@@ -228,9 +314,11 @@ def userInput():
 
 
         else:
-            print("===============================================================")
-            print ("SIMPLEX")
-            lp_simplex.solve_minimize()
+            lp_iterior_point = IteriorPoint(objective_function, constraints, right_hand_side, accuracy, n, False)
+            if(not flag_rhs):
+                print("===============================================================")
+                print ("SIMPLEX")
+                lp_simplex.solve_minimize()
             print("===============================================================")
             print ("INTERIOR POINT")
             lp_iterior_point.solve_min()
@@ -240,17 +328,11 @@ def userInput():
     except ValueError:
         print("ERROR: NOT A NUMBER")
         return
+#TODO валится на degeneracy alternative optima что то проходит что то валится но вроде так и должно быть
+    except numpy.linalg.LinAlgError:
+        print("The method is not applicable!")
+        return
+
+
 
 userInput()
-
-# initial_solution = numpy.array([1, 1, 1, 315, 174, 169], float)
-# constraints = numpy.array([[18, 15, 12, 1, 0, 0], [6, 4, 8, 0, 1, 0], [5, 3, 3, 0, 0, 1]], float)
-# coefs = numpy.array([9, 10, 16, 0, 0, 0], float)
-
-# lp_simplex = Simplex([9,10,16], [[18, 15, 12], [6, 4, 8], [5, 3, 3]], [360, 192, 180], 4)
-# lp_iterior_point = IteriorPoint(coefs, constraints, [360, 192, 180], 10)
-# lp_iterior_point.solve_max()
-
-# lp_simplex.solve_maximize()
-# # lp_simplex.solve_minimize()
-# lp_simplex.print_solved()
