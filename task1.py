@@ -20,6 +20,7 @@ class Simplex:
         self.basic = [f's{i+1}' for i in range(len(constrains_matrix))]
         self.vars = [f'x{i+1}' for i in range(len(obj_function))] + self.basic
         self.formatting = '{:'+str(self.eps + spacing) + '.' + str(self.eps) + 'f}'
+        self.formatting_no_space = '{:'+str(self.eps) + '.' + str(self.eps) + 'f}'
         self.solving = []
 
     # just simplex 
@@ -97,9 +98,9 @@ class Simplex:
 
     # function to print tableu after applying a Simplex method
     def print_solved(self):
-        print("optimum is", self.solving[0][self.m-1])
+        print("optimum is", self.formatting_no_space.format(self.solving[0][self.m-1]))
         for i in range(len(self.basic)):
-            print(self.basic[i], "=", self.solving[i+1][self.m-1])
+            print(self.basic[i], "=", self.formatting_no_space.format(self.solving[i+1][self.m-1]))
             
         string = '____'
         if ((self.eps + 4)%2 == 1 or (self.eps + 4) == 5):
