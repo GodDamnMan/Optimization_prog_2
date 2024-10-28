@@ -6,7 +6,7 @@ from task1 import Simplex
 
 class IteriorPoint:
 
-    def __init__(self, coefs, constraints, right_hand_side, epsilon):
+    def __init__(self, coefs:list, constraints:list, right_hand_side:list, epsilon:int, n:int):
         self.solution_l1 = None
         self.solution_l2 = None
         self.epsilon = epsilon
@@ -16,30 +16,23 @@ class IteriorPoint:
         self.alpha1 = 0.5
         self.alpha2 = 0.9
         self.iter_val = 1
+        self.n = n
+        
 
     def find_initial_solution(self):
-        initial_solution = []
-        for item in self.coefs:
-            if item != 0:
-                initial_solution.append(1)
-
-        for i in range(len(self.constraints)):
-            row = self.constraints[i]
-            res = self.right_hand_side[i]
-            for item in row:
-                if(item != 1):
-                    res -= item
-            initial_solution.append(res)
+        initial_solution = [0.00001 for _ in range(self.n)]
         
-        self.solution_l1 = initial_solution
-        self.solution_l2 = initial_solution    
+        for i in range(len(self.constraints)):
+            initial_solution.append(self.right_hand_side[i] - 0.00001 * sum(self.constraints[i][:self.n]))
+        
+        self.solution_l1 = initial_solution.copy()
+        self.solution_l2 = initial_solution.copy()
 
     def iterior_point_method(self):
         self.find_initial_solution()
         #TODO понять когда у нас метод не будет работать
         #TODO разобраться что и как нужно выводить у симплекса
         while True:
-
             #calculating previous solution and diagonal matrix for lambda1 and lambda2
             prev_sol_l1 = self.solution_l1
             diagonal_l1 = numpy.diag(self.solution_l1)    
@@ -135,6 +128,8 @@ class IteriorPoint:
 ##
 def userInput():
     type = input("Greetings, this programm will solve your LP problem using interior-point method.\nEnter the type of the problem(Max/Min): ").lower()
+    m = type.index("m")
+    type = type[m:m+3]
     if (type != "max" and type != "min"):
         print("ERROR: UNKNOWN TYPE")
         return
@@ -149,7 +144,9 @@ def userInput():
         if(len(objective_function) == 0):
             print("ERROR: NO COEFFICIENTS")
             return
+        n = len(objective_function)
         
+
         amount = int(input("Enter amount of the constraints(not assuming x>=0): "))
         if(amount < 1):
             print("ERROR: AMOUNT < 1 ?!")
@@ -163,7 +160,21 @@ def userInput():
                 print("ERROR: NOT ENOUGH COEFFICIENTS")
                 return
             constraints.append(constraint)
+        
+
+        # Unbounded check
+        for j in range(len(constraints[0])):
+            f = True
+            for i in range(len(constraints)):
+                if constraints[i][j] > 0:
+                    f = False
+                    continue
+            if f:
+                print("Unbounded")
+                return
             
+
+
         right_hand_side = input("Enter the right-hand side numbers: ").split(" ")
         for i in range(right_hand_side.count("")):
             right_hand_side.remove("")
@@ -203,7 +214,7 @@ def userInput():
                 else:
                     constraint_iter.append(0)
 
-        lp_iterior_point = IteriorPoint(objective_function, constraints, right_hand_side, accuracy)
+        lp_iterior_point = IteriorPoint(objective_function, constraints, right_hand_side, accuracy, n)
         # lp_simplex.print_initial()
 
         if(type == "max"):
