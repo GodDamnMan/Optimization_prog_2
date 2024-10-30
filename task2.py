@@ -51,7 +51,7 @@ class IteriorPoint:
                     grad = [self.constraints[ind][j]/c if j != i else 0  for j in range(len(self.constraints[ind]))] # + [self.right_hand_side[ind]]
                     s = (sum([i**2 for i in grad])) ** 0.5
                     step = 0.1 - initial_solution[i]
-                    grad = [j * step / s  for j in grad]
+                    grad = [j * step / s**2  for j in grad]
                     new_initial_solution = [initial_solution[j] + grad[j] for j in range(self.n)]
 
                     for j in range(len(self.constraints)):
